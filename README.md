@@ -48,6 +48,9 @@ The system processes video feeds to detect pallets using a YOLOv11 model deploye
     ```bash
         pip install ultralytics opencv-python
 
+---
+
+
 ### **Commands to Run the Project**
 1. Run the yolo node with detection and segmentation
    ```bash
