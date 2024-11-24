@@ -9,14 +9,7 @@ This project detects pallets in a factory workshop using YOLOv11 integrated with
 2. [Setup Instructions](#setup-instructions)
    - [System Requirements](#system-requirements)
    - [Installation](#installation)
-3. [ROS2 Nodes](#ros2-nodes)
-   - [Camera Node](#camera-node)
-   - [YOLO Inference Node](#yolo-inference-node)
-4. [Training the YOLO Model](#training-the-yolo-model)
-5. [Commands to Run the Project](#commands-to-run-the-project)
-6. [Project Structure](#project-structure)
-
-
+3. [Commands to Run the Project](#commands-to-run-the-project)
 ---
 
 ## **Project Overview**
@@ -56,3 +49,8 @@ The system processes video feeds to detect pallets using a YOLOv11 model deploye
         pip install ultralytics opencv-python
 
 ### **Commands to Run the Project**
+1. Run the yolo node with detection and segmentation
+   ```bash
+   	ros2 run camera_interface yolo_model
+  
+  if you dont have zed2i camera available you can use your device camera, some of the lines needs to be commented, explained in the code itself	
