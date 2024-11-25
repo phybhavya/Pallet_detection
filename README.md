@@ -57,3 +57,11 @@ The system processes video feeds to detect pallets using a YOLOv11 model deploye
    	ros2 run camera_interface yolo_model
   
   if you dont have zed2i camera available you can use your device camera, some of the lines needs to be commented, explained in the code itself	
+
+
+---
+### **Future scope**
+1. export the model to onnx so it js ready for edge deployment
+2. solve the issues of onnx library on device
+3. Dockerize the whole package for edge deployment eith having necessary nvidia drivers in it
+4. Improve model accuracy by training on a bigger data set and annotate it better
