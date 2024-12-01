@@ -7,6 +7,7 @@ import torch
 from ultralytics import YOLO  # Assuming YOLOv11 segmentation model support
 import os
 import numpy as np
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 class CameraYoloNode(Node):
     def __init__(self):
         super().__init__('camera_yolo_node')
@@ -29,11 +30,20 @@ class CameraYoloNode(Node):
         self.detectionmodel = YOLO(detection_path)  # Load YOLOv11 model
         self.segmentationmodel = YOLO(segmentation_path)
         print("model path successfull")
+        
+        
+        # Define a compatible QoS Profile
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,  # Match the topic's reliability setting
+            depth=10  # Adjust depth as needed
+        )
+
         self.subscription = self.create_subscription(
             Image,
-            'camera/image_raw',# change the topic to /zed/zed_node/rgb/image_rect_color if using a zed camera
+            # 'camera/image_raw',# change the topic to /zed/zed_node/rgb/image_rect_color if using a zed camera
+            '/robot1/zed2i/left/image_rect_color',
             self.image_callback,
-            10
+            qos_profile
         )
 
         # OpenCV bridge
@@ -105,8 +115,10 @@ class CameraYoloNode(Node):
     def image_callback(self, msg):
         print("inside the function")
         try:
-            # Convert ROS2 Image message to OpenCV image
-            results = self.detectionmodel(msg, conf =0.2)
+            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+            original_height, original_width = frame.shape[:2]
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = self.detectionmodel(frame, conf =0.2)
 
             for result in results:
                     # Draw bounding boxes
@@ -115,10 +127,13 @@ class CameraYoloNode(Node):
                     x1, y1, x2, y2 = map(int, box[:4])
                     confidence = float(result.boxes.conf[i])
                     class_id = int(result.boxes.cls[i])
-
+                    x1 = int(x1 * original_width / result.orig_shape[0])
+                    x2 = int(x2 * original_width / result.orig_shape[0])
+                    y1 = int(y1 * original_height / result.orig_shape[1])
+                    y2 = int(y2 * original_height / result.orig_shape[1])
                     # Draw bounding box and label on the image
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    label = f"{self.model.names[class_id]} {confidence:.2f}"
+                    label = f"{self.detectionmodel.names[class_id]} {confidence:.2f}"
                     cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
                 results = self.segmentationmodel(frame, conf = 0.2)
@@ -129,8 +144,9 @@ class CameraYoloNode(Node):
                         # Convert mask to numpy format
                         mask = mask.cpu().numpy()
                         # Apply color to the mask
+                        resized_mask = cv2.resize(mask, (original_width, original_height))
                         colored_mask = np.zeros_like(frame, dtype=np.uint8)
-                        colored_mask[:, :, 1] = (mask * 255).astype(np.uint8)  # Green channel
+                        colored_mask[:, :, 1] = (resized_mask * 255).astype(np.uint8)  # Green channel
                         frame = cv2.addWeighted(frame, 1, colored_mask, 0.5, 0)
 
                 # Publish the segmented image
